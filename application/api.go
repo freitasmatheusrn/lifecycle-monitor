@@ -3,6 +3,7 @@ package application
 import (
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/freitasmatheusrn/lifecycle-monitor/assets"
@@ -225,13 +226,13 @@ func (app *Application) Mount() http.Handler {
 	protected.DELETE("/products/:id", productHandler.DeleteProduct)
 	protected.GET("/products/:id/snapshots", productHandler.GetProductSnapshots)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(":" + app.Config.WebServerPort))
 	return e
 }
 
 func (app *Application) Run(h http.Handler) error {
 	srv := &http.Server{
-		Addr:         app.Config.WebServerPort,
+		Addr:         ":" + app.Config.WebServerPort,
 		Handler:      h,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
@@ -240,5 +241,10 @@ func (app *Application) Run(h http.Handler) error {
 
 	log.Printf("server has started at addr %s", app.Config.WebServerPort)
 
-	return srv.ListenAndServeTLS("server.crt", "server.key")
+	// Check if TLS certificates exist for local development
+	if _, err := os.Stat("server.crt"); err == nil {
+		return srv.ListenAndServeTLS("server.crt", "server.key")
+	}
+	// In production (Dokku), nginx handles TLS
+	return srv.ListenAndServe()
 }

@@ -41,6 +41,31 @@ func NewClient(cfg Config) (*Client, error) {
 	return &Client{client}, nil
 }
 
+// NewClientFromURL creates a Redis client from a URL (e.g., redis://:password@host:port)
+func NewClientFromURL(redisURL string) (*Client, error) {
+	opt, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse redis URL: %w", err)
+	}
+
+	opt.DialTimeout = 5 * time.Second
+	opt.ReadTimeout = 3 * time.Second
+	opt.WriteTimeout = 3 * time.Second
+	opt.PoolSize = 10
+	opt.MinIdleConns = 5
+
+	client := redis.NewClient(opt)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to redis: %w", err)
+	}
+
+	return &Client{client}, nil
+}
+
 func (c *Client) Close() error {
 	return c.Client.Close()
 }

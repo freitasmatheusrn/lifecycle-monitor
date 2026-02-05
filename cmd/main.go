@@ -18,19 +18,33 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	dsn := fmt.Sprintf(
-		"%s://%s:%s@localhost:5432/%s", config.DBDriver, config.DBUser, config.DBPassword, config.DBName)
-	db, err := postgres.Init(dsn)
-	if err != nil {
-		panic("error starting db")
+
+	// Use DATABASE_URL if available (Dokku), otherwise build from individual params
+	var dsn string
+	if config.DatabaseURL != "" {
+		dsn = config.DatabaseURL
+	} else {
+		dsn = fmt.Sprintf(
+			"%s://%s:%s@%s:%s/%s", config.DBDriver, config.DBUser, config.DBPassword, config.DBHost, config.DBPort, config.DBName)
 	}
 
-	redisClient, err := redisdb.NewClient(redisdb.Config{
-		Host:     config.RedisHost,
-		Port:     config.RedisPort,
-		Password: config.RedisPassword,
-		DB:       config.RedisDB,
-	})
+	db, err := postgres.Init(dsn)
+	if err != nil {
+		panic("error starting db: " + err.Error())
+	}
+
+	// Use REDIS_URL if available (Dokku), otherwise build from individual params
+	var redisClient *redisdb.Client
+	if config.RedisURL != "" {
+		redisClient, err = redisdb.NewClientFromURL(config.RedisURL)
+	} else {
+		redisClient, err = redisdb.NewClient(redisdb.Config{
+			Host:     config.RedisHost,
+			Port:     config.RedisPort,
+			Password: config.RedisPassword,
+			DB:       config.RedisDB,
+		})
+	}
 	if err != nil {
 		panic("error starting redis: " + err.Error())
 	}

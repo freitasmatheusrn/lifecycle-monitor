@@ -3,6 +3,8 @@ package configs
 import "github.com/spf13/viper"
 
 type Configs struct {
+	DatabaseURL        string `mapstructure:"DATABASE_URL"`
+	RedisURL           string `mapstructure:"REDIS_URL"`
 	DBDriver           string `mapstructure:"DB_DRIVER"`
 	DBHost             string `mapstructure:"DB_HOST"`
 	DBName             string `mapstructure:"DB_NAME"`
@@ -60,13 +62,22 @@ func LoadConfig(path string) (*Configs, error) {
 	// Set default for alert recipients (empty means no alerts)
 	viper.SetDefault("ALERT_RECIPIENTS", []string{"freitasmatheus@lunaltas.com"})
 
-	err := viper.ReadInConfig()
+	// Set default port (Dokku uses PORT env var)
+	viper.SetDefault("WEB_SERVER_PORT", "5000")
+
+	// Try to read config file, but don't panic if it doesn't exist (production uses env vars)
+	_ = viper.ReadInConfig()
+
+	err := viper.Unmarshal(&cfg)
 	if err != nil {
 		panic(err)
 	}
-	err = viper.Unmarshal(&cfg)
-	if err != nil {
-		panic(err)
+
+	// Use PORT env var if WEB_SERVER_PORT is not set (Dokku compatibility)
+	if cfg.WebServerPort == "" || cfg.WebServerPort == "5000" {
+		if port := viper.GetString("PORT"); port != "" {
+			cfg.WebServerPort = port
+		}
 	}
 
 	return cfg, nil
