@@ -43,6 +43,34 @@ func LoadConfig(path string) (*Configs, error) {
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
 
+	// Bind environment variables explicitly for Dokku compatibility
+	viper.BindEnv("DATABASE_URL")
+	viper.BindEnv("REDIS_URL")
+	viper.BindEnv("PORT")
+	viper.BindEnv("DB_DRIVER")
+	viper.BindEnv("DB_HOST")
+	viper.BindEnv("DB_PORT")
+	viper.BindEnv("DB_USER")
+	viper.BindEnv("DB_PASSWORD")
+	viper.BindEnv("DB_NAME")
+	viper.BindEnv("JWT_SECRET")
+	viper.BindEnv("ACCESS_TOKEN_EXP")
+	viper.BindEnv("REFRESH_TOKEN_EXP")
+	viper.BindEnv("REDIS_HOST")
+	viper.BindEnv("REDIS_PORT")
+	viper.BindEnv("REDIS_PASSWORD")
+	viper.BindEnv("REDIS_DB")
+	viper.BindEnv("SIEMENS_URL")
+	viper.BindEnv("SMTP_HOST")
+	viper.BindEnv("SMTP_PORT")
+	viper.BindEnv("SMTP_USER")
+	viper.BindEnv("SMTP_PASS")
+	viper.BindEnv("MAILJET_API_KEY")
+	viper.BindEnv("MAILJET_API_SECRET")
+	viper.BindEnv("CRON_EXPRESSION")
+	viper.BindEnv("LOG_PATH")
+	viper.BindEnv("WEB_SERVER_PORT")
+
 	// Set defaults for token expiration
 	viper.SetDefault("ACCESS_TOKEN_EXP", 900)     // 15 minutes
 	viper.SetDefault("REFRESH_TOKEN_EXP", 604800) // 7 days
