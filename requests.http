@@ -1,0 +1,139 @@
+### Variables
+@apiUrl = http://localhost:8080
+
+@contentType = application/json
+
+### ============================================
+### AUTH - Get a token first
+### ============================================
+
+### Signup (create a new user)
+POST {{apiUrl}}/signup
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Signin (get JWT token)
+# @name signin
+POST {{apiUrl}}/signin
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Save the token from signin response
+@accessToken = {{signin.response.body.access_token}}
+
+### ============================================
+### PRODUCTS - Test the crawler endpoints
+### ============================================
+
+### Add products to tracking list
+### These are the Siemens product codes to test the crawler
+# @name addProducts
+POST {{apiUrl}}/products
+Content-Type: {{contentType}}
+Authorization: {{accessToken}}
+
+{
+  "codes": [
+    "6ED1052-1CC08-0BA2",
+    "6AG1052-1HB08-7BA2"
+  ]
+}
+
+### Add single product
+POST {{apiUrl}}/products
+Content-Type: {{contentType}}
+Authorization: {{accessToken}}
+
+{
+  "codes": ["6ED1052-1CC08-0BA2"]
+}
+
+### List all tracked products (paginated)
+GET {{apiUrl}}/products
+Authorization:  {{accessToken}}
+
+### List products with pagination
+GET {{apiUrl}}/products?page=1&page_size=10
+Authorization: Bearer {{accessToken}}
+
+### List products with search filter
+GET {{apiUrl}}/products?search=LOGO
+Authorization: Bearer {{accessToken}}
+
+### ============================================
+### PRODUCT DETAILS - Use product ID from response
+### ============================================
+
+### Get single product by ID
+### Replace {product_id} with actual UUID from addProducts response
+@productId = {{addProducts.response.body.added[0].id}}
+
+GET {{apiUrl}}/products/{{productId}}
+Authorization: Bearer {{accessToken}}
+
+### Get product snapshots (history)
+GET {{apiUrl}}/products/{{productId}}/snapshots
+Authorization: Bearer {{accessToken}}
+
+### Remove product from tracking
+DELETE {{apiUrl}}/products/{{productId}}
+Authorization: Bearer {{accessToken}}
+
+### ============================================
+### INDIVIDUAL PRODUCT TESTS
+### ============================================
+
+### Add LOGO! 24CE (6ED1052-1CC08-0BA2)
+POST {{apiUrl}}/products
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "codes": ["6ED1052-1CC08-0BA2"]
+}
+
+### Add SIPLUS LOGO! (6AG1052-1HB08-7BA2)
+POST {{apiUrl}}/products
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "codes": ["6AG1052-1HB08-7BA2"]
+}
+
+### Add SIMATIC CPU (6AG1414-3EM07-7AB)
+POST {{apiUrl}}/products
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "codes": ["6AG1414-3EM07-7AB"]
+}
+
+### ============================================
+### USER ENDPOINTS
+### ============================================
+
+### Get current user info
+GET {{apiUrl}}/me
+Authorization: Bearer {{accessToken}}
+
+### Refresh token
+POST {{apiUrl}}/refresh
+Content-Type: {{contentType}}
+
+{
+  "refresh_token": "your_refresh_token_here"
+}
+
+### Logout
+POST {{apiUrl}}/logout
+Authorization: Bearer {{accessToken}}

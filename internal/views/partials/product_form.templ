@@ -1,0 +1,847 @@
+package partials
+
+import "github.com/freitasmatheusrn/lifecycle-monitor/internal/views/components"
+
+templ ProductForm() {
+	<div id="product-modal" class="fixed inset-0 bg-brand/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+		<div class="bg-surface rounded-xl shadow-lg border border-sidebar-border w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+			<!-- Form View -->
+			<div id="form-view">
+				<!-- Header -->
+				<div class="flex justify-between items-center p-5 border-b border-sidebar-border">
+					<div>
+						<h2 class="text-lg font-semibold text-brand">Adicionar Produto</h2>
+						<p class="text-sm text-brand-500 mt-0.5">Insira códigos ou importe uma planilha</p>
+					</div>
+					<button
+						onclick="this.closest('.fixed').remove()"
+						class="p-2 rounded-lg text-brand-400 hover:text-brand hover:bg-surface-muted transition-colors"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+				<!-- Tabs -->
+				<div class="flex border-b border-sidebar-border">
+					<button
+						id="tab-manual"
+						type="button"
+						onclick="switchTab('manual')"
+						class="flex-1 px-4 py-3 text-sm font-medium text-brand border-b-2 border-brand transition-colors"
+					>
+						<svg class="w-4 h-4 inline-block mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+						</svg>
+						Manual
+					</button>
+					<button
+						id="tab-import"
+						type="button"
+						onclick="switchTab('import')"
+						class="flex-1 px-4 py-3 text-sm font-medium text-brand-400 border-b-2 border-transparent hover:text-brand hover:bg-surface-muted transition-colors"
+					>
+						<svg class="w-4 h-4 inline-block mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+						</svg>
+						Importar Planilha
+					</button>
+				</div>
+				<!-- Manual Form -->
+				<div
+					id="tab-content-manual"
+					class="p-5 space-y-5"
+				>
+					<!-- Code input -->
+					<div class="space-y-1.5">
+						<label class="block text-sm font-medium text-brand">
+							Código do Produto
+						</label>
+						<div class="flex gap-2">
+							<input
+								type="text"
+								id="code-input"
+								placeholder="Ex: 6ES7511-1AK02-0AB0"
+								class="flex-1 bg-surface border border-sidebar-border rounded-lg px-3 py-2.5 text-sm text-brand placeholder:text-brand-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand-300 hover:border-brand-300"
+							/>
+							<button
+								type="button"
+								onclick="addCode()"
+								class="px-4 py-2.5 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-800 transition-all duration-200 active:scale-[0.98]"
+							>
+								Adicionar
+							</button>
+						</div>
+					</div>
+					<!-- Codes list -->
+					<div class="space-y-1.5">
+						<label class="block text-sm font-medium text-brand">
+							Códigos Adicionados
+							<span class="text-brand-400 font-normal ml-1" id="codes-count">(0)</span>
+						</label>
+						<select
+							id="codes-select"
+							multiple
+							size="5"
+							class="w-full bg-surface border border-sidebar-border rounded-lg px-3 py-2.5 text-sm text-brand transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand-300"
+						></select>
+						<p class="text-xs text-brand-400">
+							Selecione um código e pressione <kbd class="px-1.5 py-0.5 bg-surface-muted rounded text-brand-500 font-mono text-xs">Delete</kbd> para remover
+						</p>
+					</div>
+					<!-- Actions -->
+					<div class="flex gap-3 justify-end pt-2">
+						@components.Button(components.ButtonProps{
+							Type:    "button",
+							Variant: components.ButtonSecondary,
+							Class:   "onclick:this.closest('.fixed').remove()",
+						}) {
+							Cancelar
+						}
+						<button
+							id="submit-btn"
+							type="button"
+							class="inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2.5 text-sm rounded-lg bg-brand text-white hover:bg-brand-800 focus:ring-brand/30 active:scale-[0.98]"
+						>
+							<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+							</svg>
+							Adicionar Produtos
+						</button>
+					</div>
+				</div>
+				<!-- Import Form -->
+				<div
+					id="tab-content-import"
+					class="p-5 space-y-5 hidden"
+				>
+					<!-- File input -->
+					<div class="space-y-1.5">
+						<label class="block text-sm font-medium text-brand">
+							Arquivo da Planilha
+						</label>
+						<div
+							id="drop-zone"
+							class="border-2 border-dashed border-sidebar-border rounded-lg p-6 text-center hover:border-brand-300 hover:bg-surface-muted/50 transition-all duration-200 cursor-pointer"
+							onclick="document.getElementById('file-input').click()"
+						>
+							<input
+								type="file"
+								id="file-input"
+								accept=".xlsx,.xls,.csv"
+								class="hidden"
+							/>
+							<svg class="w-10 h-10 mx-auto text-brand-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+							</svg>
+							<p class="text-sm text-brand-500 mb-1">
+								Clique para selecionar ou arraste o arquivo
+							</p>
+							<p class="text-xs text-brand-400">
+								Formatos aceitos: .xlsx, .xls, .csv
+							</p>
+						</div>
+						<div id="file-info" class="hidden">
+							<div class="flex items-center gap-3 p-3 bg-surface-muted rounded-lg">
+								<svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+								</svg>
+								<div class="flex-1 min-w-0">
+									<p id="file-name" class="text-sm font-medium text-brand truncate"></p>
+									<p id="file-size" class="text-xs text-brand-400"></p>
+								</div>
+								<button
+									type="button"
+									onclick="clearFile()"
+									class="p-1.5 rounded-lg text-brand-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+						</div>
+					</div>
+					<!-- Import result -->
+					<div id="import-result" class="hidden space-y-3">
+						<div id="import-success" class="hidden p-4 bg-green-50 border border-green-200 rounded-lg">
+							<div class="flex items-center gap-2 text-green-700">
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+								</svg>
+								<span id="import-success-text" class="text-sm font-medium"></span>
+							</div>
+						</div>
+						<div id="import-error" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg">
+							<div class="flex items-center gap-2 text-red-700">
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+								</svg>
+								<span id="import-error-text" class="text-sm font-medium"></span>
+							</div>
+						</div>
+					</div>
+					<!-- Actions -->
+					<div class="flex gap-3 justify-end pt-2">
+						@components.Button(components.ButtonProps{
+							Type:    "button",
+							Variant: components.ButtonSecondary,
+							Class:   "onclick:this.closest('.fixed').remove()",
+						}) {
+							Cancelar
+						}
+						<button
+							id="import-btn"
+							type="button"
+							disabled
+							class="inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2.5 text-sm rounded-lg bg-brand text-white hover:bg-brand-800 focus:ring-brand/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							<svg id="import-btn-icon" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+							</svg>
+							<svg id="import-btn-spinner" class="w-4 h-4 mr-1.5 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+							<span id="import-btn-text">Importar Planilha</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<!-- Import Loading View -->
+			<div id="import-loading-view" class="hidden">
+				<!-- Header -->
+				<div class="flex justify-between items-center p-5 border-b border-sidebar-border">
+					<div>
+						<h2 id="import-loading-title" class="text-lg font-semibold text-brand">Importando Planilha</h2>
+						<p id="import-loading-subtitle" class="text-sm text-brand-500 mt-0.5">Processando dados...</p>
+					</div>
+					<div class="p-2">
+						<svg class="w-5 h-5 animate-spin text-brand" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+					</div>
+				</div>
+				<!-- Progress Content -->
+				<div class="p-5 space-y-5">
+					<!-- Phase indicator -->
+					<div class="flex items-center gap-3">
+						<div id="phase-import-indicator" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 text-brand text-sm font-medium">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+							</svg>
+							<span>Importando</span>
+						</div>
+						<svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+						</svg>
+						<div id="phase-crawl-indicator" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-muted text-brand-400 text-sm font-medium">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+							</svg>
+							<span>Buscando Dados</span>
+						</div>
+					</div>
+					<!-- Progress Bar -->
+					<div class="space-y-2">
+						<div class="flex justify-between text-sm">
+							<span id="import-progress-label" class="text-brand-500">Importando produtos...</span>
+							<span id="import-progress-text" class="text-brand font-medium">0 / 0</span>
+						</div>
+						<div class="w-full bg-surface-muted rounded-full h-2.5 overflow-hidden">
+							<div
+								id="import-progress-bar"
+								class="bg-brand h-full rounded-full transition-all duration-300 ease-out"
+								style="width: 0%"
+							></div>
+						</div>
+					</div>
+					<!-- Current Code -->
+					<div class="space-y-1.5">
+						<label class="block text-sm font-medium text-brand">Processando agora</label>
+						<div
+							id="import-current-code"
+							class="bg-brand/10 border border-brand/20 rounded-lg px-4 py-3 text-brand font-mono text-sm flex items-center gap-2"
+						>
+							<svg class="w-4 h-4 animate-pulse text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+							</svg>
+							<span>-</span>
+						</div>
+					</div>
+					<!-- Stats -->
+					<div class="grid grid-cols-3 gap-3">
+						<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+							<p id="import-stat-success" class="text-xl font-bold text-green-700">0</p>
+							<p class="text-xs text-green-600">Sucesso</p>
+						</div>
+						<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+							<p id="import-stat-updated" class="text-xl font-bold text-yellow-700">0</p>
+							<p class="text-xs text-yellow-600">Atualizados</p>
+						</div>
+						<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+							<p id="import-stat-failed" class="text-xl font-bold text-red-700">0</p>
+							<p class="text-xs text-red-600">Falhas</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Loading View -->
+			<div id="loading-view" class="hidden">
+				<!-- Header -->
+				<div class="flex justify-between items-center p-5 border-b border-sidebar-border">
+					<div>
+						<h2 class="text-lg font-semibold text-brand">Buscando Produtos</h2>
+						<p class="text-sm text-brand-500 mt-0.5">Aguarde enquanto buscamos os dados...</p>
+					</div>
+					<div class="p-2">
+						<svg class="w-5 h-5 animate-spin text-brand" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+					</div>
+				</div>
+				<!-- Progress Content -->
+				<div class="p-5 space-y-5">
+					<!-- Progress Bar -->
+					<div class="space-y-2">
+						<div class="flex justify-between text-sm">
+							<span class="text-brand-500">Progresso</span>
+							<span id="progress-text" class="text-brand font-medium">0 / 0</span>
+						</div>
+						<div class="w-full bg-surface-muted rounded-full h-2.5 overflow-hidden">
+							<div
+								id="progress-bar"
+								class="bg-brand h-full rounded-full transition-all duration-300 ease-out"
+								style="width: 0%"
+							></div>
+						</div>
+					</div>
+					<!-- Current Code -->
+					<div class="space-y-1.5">
+						<label class="block text-sm font-medium text-brand">Buscando agora</label>
+						<div
+							id="current-code"
+							class="bg-brand/10 border border-brand/20 rounded-lg px-4 py-3 text-brand font-mono text-sm flex items-center gap-2"
+						>
+							<svg class="w-4 h-4 animate-pulse text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+							</svg>
+							<span>-</span>
+						</div>
+					</div>
+					<!-- Codes List -->
+					<div class="space-y-1.5">
+						<label class="block text-sm font-medium text-brand">Códigos na fila</label>
+						<div
+							id="codes-queue"
+							class="bg-surface border border-sidebar-border rounded-lg max-h-40 overflow-y-auto"
+						></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		const productFormState = {
+			codes: [],
+			eventSource: null,
+			selectedFile: null
+		};
+
+		function switchTab(tab) {
+			const tabManual = document.getElementById('tab-manual');
+			const tabImport = document.getElementById('tab-import');
+			const contentManual = document.getElementById('tab-content-manual');
+			const contentImport = document.getElementById('tab-content-import');
+
+			if (tab === 'manual') {
+				tabManual.classList.add('text-brand', 'border-brand');
+				tabManual.classList.remove('text-brand-400', 'border-transparent');
+				tabImport.classList.remove('text-brand', 'border-brand');
+				tabImport.classList.add('text-brand-400', 'border-transparent');
+				contentManual.classList.remove('hidden');
+				contentImport.classList.add('hidden');
+			} else {
+				tabImport.classList.add('text-brand', 'border-brand');
+				tabImport.classList.remove('text-brand-400', 'border-transparent');
+				tabManual.classList.remove('text-brand', 'border-brand');
+				tabManual.classList.add('text-brand-400', 'border-transparent');
+				contentImport.classList.remove('hidden');
+				contentManual.classList.add('hidden');
+			}
+		}
+
+		function formatFileSize(bytes) {
+			if (bytes === 0) return '0 Bytes';
+			const k = 1024;
+			const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+			const i = Math.floor(Math.log(bytes) / Math.log(k));
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+		}
+
+		function handleFileSelect(file) {
+			if (!file) return;
+
+			const validTypes = [
+				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+				'application/vnd.ms-excel',
+				'text/csv'
+			];
+			const validExtensions = ['.xlsx', '.xls', '.csv'];
+			const fileName = file.name.toLowerCase();
+			const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+
+			if (!validTypes.includes(file.type) && !hasValidExtension) {
+				if (window.showToast) {
+					window.showToast('danger', 'Formato de arquivo invalido. Use .xlsx, .xls ou .csv');
+				}
+				return;
+			}
+
+			productFormState.selectedFile = file;
+			document.getElementById('drop-zone').classList.add('hidden');
+			document.getElementById('file-info').classList.remove('hidden');
+			document.getElementById('file-name').textContent = file.name;
+			document.getElementById('file-size').textContent = formatFileSize(file.size);
+			document.getElementById('import-btn').disabled = false;
+
+			// Hide any previous results
+			document.getElementById('import-result').classList.add('hidden');
+			document.getElementById('import-success').classList.add('hidden');
+			document.getElementById('import-error').classList.add('hidden');
+		}
+
+		function clearFile() {
+			productFormState.selectedFile = null;
+			document.getElementById('file-input').value = '';
+			document.getElementById('drop-zone').classList.remove('hidden');
+			document.getElementById('file-info').classList.add('hidden');
+			document.getElementById('import-btn').disabled = true;
+		}
+
+		function showImportLoadingView() {
+			document.getElementById('form-view').classList.add('hidden');
+			document.getElementById('import-loading-view').classList.remove('hidden');
+
+			// Reset stats
+			document.getElementById('import-stat-success').textContent = '0';
+			document.getElementById('import-stat-updated').textContent = '0';
+			document.getElementById('import-stat-failed').textContent = '0';
+			document.getElementById('import-progress-bar').style.width = '0%';
+			document.getElementById('import-progress-text').textContent = '0 / 0';
+			document.getElementById('import-current-code').querySelector('span').textContent = '-';
+
+			// Reset phase indicators
+			document.getElementById('phase-import-indicator').classList.add('bg-brand/10', 'text-brand');
+			document.getElementById('phase-import-indicator').classList.remove('bg-surface-muted', 'text-brand-400', 'bg-green-100', 'text-green-700');
+			document.getElementById('phase-crawl-indicator').classList.add('bg-surface-muted', 'text-brand-400');
+			document.getElementById('phase-crawl-indicator').classList.remove('bg-brand/10', 'text-brand', 'bg-green-100', 'text-green-700');
+		}
+
+		function updateImportProgress(index, total, phase) {
+			const percentage = total > 0 ? ((index + 1) / total) * 100 : 0;
+			document.getElementById('import-progress-text').textContent = (index) + ' / ' + total;
+			document.getElementById('import-progress-bar').style.width = percentage + '%';
+		}
+
+		function setImportPhase(phase) {
+			const importIndicator = document.getElementById('phase-import-indicator');
+			const crawlIndicator = document.getElementById('phase-crawl-indicator');
+			const progressLabel = document.getElementById('import-progress-label');
+			const title = document.getElementById('import-loading-title');
+			const subtitle = document.getElementById('import-loading-subtitle');
+			const currentCodeIcon = document.getElementById('import-current-code').querySelector('svg');
+
+			if (phase === 'crawl') {
+				// Mark import as complete
+				importIndicator.classList.remove('bg-brand/10', 'text-brand');
+				importIndicator.classList.add('bg-green-100', 'text-green-700');
+
+				// Activate crawl phase
+				crawlIndicator.classList.remove('bg-surface-muted', 'text-brand-400');
+				crawlIndicator.classList.add('bg-brand/10', 'text-brand');
+
+				progressLabel.textContent = 'Buscando dados dos produtos...';
+				title.textContent = 'Buscando Dados';
+				subtitle.textContent = 'Coletando informacoes do site...';
+
+				// Change icon to search
+				currentCodeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>';
+
+				// Reset progress bar for crawl phase
+				document.getElementById('import-progress-bar').style.width = '0%';
+				document.getElementById('import-progress-text').textContent = '0 / 0';
+			}
+		}
+
+		async function importSpreadsheet() {
+			if (!productFormState.selectedFile) return;
+
+			showImportLoadingView();
+
+			const formData = new FormData();
+			formData.append('file', productFormState.selectedFile);
+
+			let createdCount = 0;
+			let updatedCount = 0;
+			let failedCount = 0;
+
+			try {
+				const response = await fetch('/products/import-stream', {
+					method: 'POST',
+					body: formData,
+					credentials: 'include'
+				});
+
+				if (!response.ok) {
+					throw new Error('Erro ao importar planilha');
+				}
+
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+				let buffer = '';
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+
+					buffer += decoder.decode(value, { stream: true });
+					const lines = buffer.split('\n');
+					buffer = lines.pop() || '';
+
+					let eventType = '';
+					for (const line of lines) {
+						if (line.startsWith('event: ')) {
+							eventType = line.slice(7).trim();
+						} else if (line.startsWith('data: ') && eventType) {
+							try {
+								const data = JSON.parse(line.slice(6));
+								handleImportEvent(eventType, data);
+
+								// Update counts based on event
+								if (eventType === 'import_success') {
+									if (data.message === 'produto criado') {
+										createdCount++;
+										document.getElementById('import-stat-success').textContent = createdCount;
+									} else if (data.message === 'produto atualizado') {
+										updatedCount++;
+										document.getElementById('import-stat-updated').textContent = updatedCount;
+									}
+								} else if (eventType === 'import_error') {
+									failedCount++;
+									document.getElementById('import-stat-failed').textContent = failedCount;
+								} else if (eventType === 'crawl_success') {
+									// Keep success count updated
+								} else if (eventType === 'crawl_error') {
+									failedCount++;
+									document.getElementById('import-stat-failed').textContent = failedCount;
+								}
+							} catch (e) {
+								console.error('Failed to parse SSE data:', e);
+							}
+							eventType = '';
+						}
+					}
+				}
+			} catch (error) {
+				console.error('Import error:', error);
+				if (window.showToast) {
+					window.showToast('danger', 'Erro ao importar planilha');
+				}
+				// Return to form view on error
+				document.getElementById('form-view').classList.remove('hidden');
+				document.getElementById('import-loading-view').classList.add('hidden');
+			}
+		}
+
+		function handleImportEvent(eventType, data) {
+			switch (eventType) {
+				case 'import_start':
+					document.getElementById('import-progress-text').textContent = '0 / ' + data.total;
+					document.getElementById('import-progress-label').textContent = 'Importando produtos...';
+					break;
+
+				case 'import_processing':
+					document.getElementById('import-current-code').querySelector('span').textContent = data.code;
+					updateImportProgress(data.index, data.total, 'import');
+					break;
+
+				case 'import_success':
+				case 'import_error':
+					updateImportProgress(data.index, data.total, 'import');
+					break;
+
+				case 'crawl_start':
+					setImportPhase('crawl');
+					document.getElementById('import-progress-text').textContent = '0 / ' + data.total;
+					break;
+
+				case 'crawl_processing':
+					document.getElementById('import-current-code').querySelector('span').textContent = data.code;
+					updateImportProgress(data.index, data.total, 'crawl');
+					break;
+
+				case 'crawl_success':
+				case 'crawl_error':
+					updateImportProgress(data.index, data.total, 'crawl');
+					break;
+
+				case 'complete':
+					// Mark crawl phase as complete
+					document.getElementById('phase-crawl-indicator').classList.remove('bg-brand/10', 'text-brand');
+					document.getElementById('phase-crawl-indicator').classList.add('bg-green-100', 'text-green-700');
+
+					document.getElementById('import-current-code').querySelector('span').textContent = 'Concluido!';
+					document.getElementById('import-loading-title').textContent = 'Importacao Concluida';
+					document.getElementById('import-loading-subtitle').textContent = 'Todos os produtos foram processados';
+
+					// Set flash toast and reload
+					const result = data.import_result || {};
+					const successText = [];
+					if (result.created > 0) successText.push(result.created + ' criado(s)');
+					if (result.updated > 0) successText.push(result.updated + ' atualizado(s)');
+
+					const message = successText.length > 0
+						? 'Planilha importada: ' + successText.join(', ')
+						: 'Planilha importada com sucesso';
+
+					document.cookie = 'flash_toast=success|' + encodeURIComponent(message) + '; path=/; max-age=60';
+					setTimeout(function() {
+						window.location.reload();
+					}, 1000);
+					break;
+			}
+		}
+
+		// File input change handler
+		document.getElementById('file-input').addEventListener('change', function(e) {
+			handleFileSelect(e.target.files[0]);
+		});
+
+		// Drag and drop handlers
+		const dropZone = document.getElementById('drop-zone');
+
+		dropZone.addEventListener('dragover', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.classList.add('border-brand', 'bg-brand/5');
+		});
+
+		dropZone.addEventListener('dragleave', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.classList.remove('border-brand', 'bg-brand/5');
+		});
+
+		dropZone.addEventListener('drop', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.classList.remove('border-brand', 'bg-brand/5');
+			if (e.dataTransfer.files.length > 0) {
+				handleFileSelect(e.dataTransfer.files[0]);
+			}
+		});
+
+		// Import button click handler
+		document.getElementById('import-btn').addEventListener('click', importSpreadsheet);
+
+		const icons = {
+			spinner: '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>',
+			check: '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+			error: '<svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+			dot: '<svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle></svg>'
+		};
+
+		function addCode() {
+			const input = document.getElementById('code-input');
+			const select = document.getElementById('codes-select');
+			const code = input.value.trim().toUpperCase();
+
+			if (code === '') return;
+
+			const exists = Array.from(select.options).some(opt => opt.value === code);
+			if (exists) {
+				input.value = '';
+				return;
+			}
+
+			const option = document.createElement('option');
+			option.value = code;
+			option.text = code;
+			option.selected = true;
+			select.appendChild(option);
+			input.value = '';
+			input.focus();
+			updateCount();
+		}
+
+		function updateCount() {
+			const select = document.getElementById('codes-select');
+			const count = document.getElementById('codes-count');
+			count.textContent = '(' + select.options.length + ')';
+		}
+
+		function showLoadingView(codes) {
+			productFormState.codes = codes;
+
+			document.getElementById('form-view').classList.add('hidden');
+			document.getElementById('loading-view').classList.remove('hidden');
+
+			const queue = document.getElementById('codes-queue');
+			queue.innerHTML = codes.map(function(code, index) {
+				return '<div id="code-item-' + index + '" class="px-4 py-2.5 border-b border-sidebar-border last:border-b-0 flex items-center gap-3 text-sm font-mono text-brand-500">' +
+					'<span id="code-icon-' + index + '" class="w-5 h-5 flex items-center justify-center">' + icons.dot + '</span>' +
+					'<span id="code-text-' + index + '">' + code + '</span>' +
+				'</div>';
+			}).join('');
+
+			document.getElementById('current-code').querySelector('span').textContent = '-';
+			document.getElementById('progress-text').textContent = '0 / ' + codes.length;
+			document.getElementById('progress-bar').style.width = '0%';
+		}
+
+		function updateItemStatus(index, status) {
+			const item = document.getElementById('code-item-' + index);
+			const iconEl = document.getElementById('code-icon-' + index);
+			if (!item || !iconEl) return;
+
+			item.classList.remove('bg-brand/5', 'text-brand', 'text-brand-500', 'text-green-600', 'bg-green-50', 'text-red-600', 'bg-red-50');
+
+			switch (status) {
+				case 'processing':
+					item.classList.add('bg-brand/5', 'text-brand');
+					iconEl.innerHTML = icons.spinner;
+					break;
+				case 'success':
+					item.classList.add('text-green-600', 'bg-green-50');
+					iconEl.innerHTML = icons.check;
+					break;
+				case 'error':
+					item.classList.add('text-red-600', 'bg-red-50');
+					iconEl.innerHTML = icons.error;
+					break;
+				default:
+					item.classList.add('text-brand-500');
+					iconEl.innerHTML = icons.dot;
+			}
+		}
+
+		function updateProgress(current, total) {
+			const percentage = total > 0 ? ((current + 1) / total) * 100 : 0;
+			document.getElementById('progress-text').textContent = (current + 1) + ' / ' + total;
+			document.getElementById('progress-bar').style.width = percentage + '%';
+		}
+
+		function startSSE(codes) {
+			const params = codes.map(c => 'codes=' + encodeURIComponent(c)).join('&');
+			const url = '/products/add-stream?' + params;
+
+			productFormState.eventSource = new EventSource(url);
+
+			productFormState.eventSource.addEventListener('start', function(e) {
+				const data = JSON.parse(e.data);
+				document.getElementById('progress-text').textContent = '0 / ' + data.total;
+			});
+
+			productFormState.eventSource.addEventListener('processing', function(e) {
+				const data = JSON.parse(e.data);
+				updateItemStatus(data.index, 'processing');
+				document.getElementById('current-code').querySelector('span').textContent = data.code;
+			});
+
+			productFormState.eventSource.addEventListener('success', function(e) {
+				const data = JSON.parse(e.data);
+				updateItemStatus(data.index, 'success');
+				updateProgress(data.index, data.total);
+			});
+
+			productFormState.eventSource.addEventListener('error', function(e) {
+				if (e.data) {
+					const data = JSON.parse(e.data);
+					updateItemStatus(data.index, 'error');
+					updateProgress(data.index, data.total);
+				}
+			});
+
+			productFormState.eventSource.addEventListener('complete', function(e) {
+				const data = JSON.parse(e.data);
+				stopSSE();
+
+				// Update progress to 100%
+				document.getElementById('progress-text').textContent = data.total + ' / ' + data.total;
+				document.getElementById('progress-bar').style.width = '100%';
+				document.getElementById('current-code').querySelector('span').textContent = 'Concluído!';
+
+				// Set flash toast cookie for after reload
+				const successCount = data.added || data.total;
+				const message = successCount === 1
+					? '1 produto adicionado com sucesso'
+					: successCount + ' produtos adicionados com sucesso';
+				document.cookie = 'flash_toast=success|' + encodeURIComponent(message) + '; path=/; max-age=60';
+
+				// Reload page after a short delay
+				setTimeout(function() {
+					window.location.reload();
+				}, 500);
+			});
+
+			productFormState.eventSource.onerror = function(e) {
+				console.error('SSE error:', e);
+				stopSSE();
+				if (window.showToast) {
+					window.showToast('danger', 'Erro ao conectar com o servidor');
+				}
+			};
+		}
+
+		function stopSSE() {
+			if (productFormState.eventSource) {
+				productFormState.eventSource.close();
+				productFormState.eventSource = null;
+			}
+		}
+
+		document.getElementById('code-input').addEventListener('keypress', function(e) {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				addCode();
+			}
+		});
+
+		document.getElementById('codes-select').addEventListener('keydown', function(e) {
+			if (e.key === 'Delete' || e.key === 'Backspace') {
+				const select = e.target;
+				const selectedOptions = Array.from(select.selectedOptions);
+				selectedOptions.forEach(opt => opt.remove());
+				updateCount();
+			}
+		});
+
+		document.getElementById('submit-btn').addEventListener('click', function() {
+			const select = document.getElementById('codes-select');
+			const codes = Array.from(select.options).map(opt => opt.value);
+
+			if (codes.length === 0) return;
+
+			showLoadingView(codes);
+			startSSE(codes);
+		});
+
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'Escape') {
+				stopSSE();
+				const modal = document.getElementById('product-modal');
+				if (modal) modal.remove();
+			}
+		});
+
+		document.getElementById('product-modal').addEventListener('click', function(e) {
+			if (e.target === this) {
+				stopSSE();
+				this.remove();
+			}
+		});
+	</script>
+}

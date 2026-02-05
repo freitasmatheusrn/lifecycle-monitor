@@ -1,0 +1,175 @@
+package pages
+
+import (
+	"fmt"
+	"github.com/freitasmatheusrn/lifecycle-monitor/internal/products"
+	"github.com/freitasmatheusrn/lifecycle-monitor/internal/views/components"
+	"github.com/freitasmatheusrn/lifecycle-monitor/internal/views/layouts"
+	"github.com/freitasmatheusrn/lifecycle-monitor/internal/views/partials"
+)
+
+type IndexProps struct {
+	Data      *products.PaginatedProductsOutput
+	Search    string
+	UserName  string
+	UserEmail string
+}
+
+templ Index(data *products.PaginatedProductsOutput, search string) {
+	@IndexWithProps(IndexProps{
+		Data:   data,
+		Search: search,
+	})
+}
+
+templ IndexWithProps(props IndexProps) {
+	@layouts.BaseWithProps(layouts.BaseProps{
+		Title:       "Dashboard",
+		CurrentPath: "/",
+		UserName:    props.UserName,
+		UserEmail:   props.UserEmail,
+	}) {
+		<div class="space-y-4 sm:space-y-6 lg:space-y-8">
+			<!-- Page Header -->
+			<header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+				<div>
+					<h1 class="text-xl sm:text-2xl font-semibold text-brand">Dashboard</h1>
+					<p class="text-brand-500 text-sm sm:text-base mt-0.5 sm:mt-1">Monitore o ciclo de vida dos seus produtos</p>
+				</div>
+				<button
+					hx-get="/products/form"
+					hx-target="#modal-container"
+					hx-swap="innerHTML"
+					class="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-brand text-white rounded-lg font-medium text-sm hover:bg-brand-800 transition-all duration-200 active:scale-[0.98]"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+					</svg>
+					<span class="hidden xs:inline">Adicionar</span> Produto
+				</button>
+			</header>
+
+			<!-- Stats Cards -->
+			<div class="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+				@StatCard(StatCardProps{
+					Title: "Ativos",
+					Value: fmt.Sprint(props.Data.ActiveCount),
+					Icon:  "check",
+					Trend: "success",
+				})
+				@StatCard(StatCardProps{
+					Title: "Descontinuados",
+					Value: fmt.Sprint(props.Data.DiscontinuedCount),
+					Icon:  "alert",
+					Trend: "error",
+				})
+				@StatCard(StatCardProps{
+					Title: "Phase Out",
+					Value: fmt.Sprint(props.Data.PhaseOutCount),
+					Icon:  "eye",
+					Trend: "warning",
+				})
+			</div>
+
+			<!-- Search and Products -->
+			<div class="bg-surface rounded-xl border border-sidebar-border shadow-sm">
+				<!-- Search Header -->
+				<div class="p-3 sm:p-5 border-b border-sidebar-border">
+					<div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+						<h2 class="text-base sm:text-lg font-medium text-brand">Meus Produtos</h2>
+						<div class="flex-1 sm:max-w-md">
+							@components.SearchBar(components.SearchBarProps{
+								Placeholder: "Buscar por código ou nome...",
+								HXGet:       "/",
+								HXTarget:    "#products-list",
+								HXTrigger:   "input changed delay:300ms, search",
+								HXPushURL:   "true",
+								Name:        "search",
+								Value:       props.Search,
+							})
+						</div>
+					</div>
+				</div>
+
+				<!-- Products List -->
+				<div id="products-list">
+					@partials.ProductsList(props.Data)
+				</div>
+			</div>
+		</div>
+	}
+}
+
+type StatCardProps struct {
+	Title string
+	Value string
+	Icon  string
+	Trend string
+}
+
+templ StatCard(props StatCardProps) {
+	<div class="bg-surface rounded-xl border border-sidebar-border p-3 sm:p-5 shadow-sm">
+		<div class="flex items-start justify-between gap-2">
+			<div class="min-w-0">
+				<p class="text-xs sm:text-sm text-brand-500 truncate">{ props.Title }</p>
+				<p class="text-xl sm:text-2xl font-semibold text-brand mt-0.5 sm:mt-1">{ props.Value }</p>
+			</div>
+			<div class={ "p-2 sm:p-2.5 rounded-lg shrink-0", trendBgClass(props.Trend) }>
+				@StatIcon(props.Icon, props.Trend)
+			</div>
+		</div>
+	</div>
+}
+
+func trendBgClass(trend string) string {
+	switch trend {
+	case "success":
+		return "bg-success-50"
+	case "error":
+		return "bg-error-50"
+	case "warning":
+		return "bg-warning-50"
+	default:
+		return "bg-surface-muted"
+	}
+}
+
+templ StatIcon(icon string, trend string) {
+	switch icon {
+		case "products":
+			<svg class={ "w-4 h-4 sm:w-5 sm:h-5", trendIconClass(trend) } fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+			</svg>
+		case "check":
+			<svg class={ "w-4 h-4 sm:w-5 sm:h-5", trendIconClass(trend) } fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
+		case "alert":
+			<svg class={ "w-4 h-4 sm:w-5 sm:h-5", trendIconClass(trend) } fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+			</svg>
+		case "eye":
+			<svg class={ "w-4 h-4 sm:w-5 sm:h-5", trendIconClass(trend) } fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+			</svg>
+		default:
+			<svg class={ "w-4 h-4 sm:w-5 sm:h-5", trendIconClass(trend) } fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+			</svg>
+	}
+}
+
+func trendIconClass(trend string) string {
+	switch trend {
+	case "success":
+		return "text-success-600"
+	case "error":
+		return "text-error-600"
+	case "warning":
+		return "text-warning-600"
+	default:
+		return "text-brand-500"
+	}
+}
+

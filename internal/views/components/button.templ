@@ -1,0 +1,115 @@
+package components
+
+type ButtonVariant string
+
+const (
+	ButtonPrimary   ButtonVariant = "primary"
+	ButtonSecondary ButtonVariant = "secondary"
+	ButtonDanger    ButtonVariant = "danger"
+	ButtonGhost     ButtonVariant = "ghost"
+)
+
+type ButtonSize string
+
+const (
+	ButtonSizeSM ButtonSize = "sm"
+	ButtonSizeMD ButtonSize = "md"
+	ButtonSizeLG ButtonSize = "lg"
+)
+
+type ButtonProps struct {
+	Type     string
+	Variant  ButtonVariant
+	Size     ButtonSize
+	Class    string
+	Disabled bool
+}
+
+func buttonClasses(variant ButtonVariant, size ButtonSize) string {
+	base := "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+
+	// Size classes
+	sizeClass := ""
+	switch size {
+	case ButtonSizeSM:
+		sizeClass = " px-3 py-1.5 text-sm rounded-md"
+	case ButtonSizeLG:
+		sizeClass = " px-6 py-3 text-base rounded-xl"
+	default: // MD
+		sizeClass = " px-4 py-2.5 text-sm rounded-lg"
+	}
+
+	// Variant classes
+	variantClass := ""
+	switch variant {
+	case ButtonPrimary:
+		variantClass = " bg-brand text-white hover:bg-brand-800 focus:ring-brand/30 active:scale-[0.98]"
+	case ButtonSecondary:
+		variantClass = " bg-surface border border-sidebar-border text-brand hover:bg-surface-muted focus:ring-brand/20 active:scale-[0.98]"
+	case ButtonDanger:
+		variantClass = " bg-error-500 text-white hover:bg-error-600 focus:ring-error-500/30 active:scale-[0.98]"
+	case ButtonGhost:
+		variantClass = " bg-transparent text-brand-500 hover:bg-surface-muted hover:text-brand focus:ring-brand/20"
+	default:
+		variantClass = " bg-brand text-white hover:bg-brand-800 focus:ring-brand/30 active:scale-[0.98]"
+	}
+
+	return base + sizeClass + variantClass
+}
+
+templ Button(props ButtonProps) {
+	<button
+		type={ props.Type }
+		if props.Disabled {
+			disabled
+		}
+		class={ buttonClasses(props.Variant, props.Size), props.Class }
+	>
+		{ children... }
+	</button>
+}
+
+// Icon button variant for actions
+templ IconButton(props ButtonProps) {
+	<button
+		type={ props.Type }
+		if props.Disabled {
+			disabled
+		}
+		class={ iconButtonClasses(props.Variant, props.Size), props.Class }
+	>
+		{ children... }
+	</button>
+}
+
+func iconButtonClasses(variant ButtonVariant, size ButtonSize) string {
+	base := "inline-flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+
+	// Size classes for icon buttons (square)
+	sizeClass := ""
+	switch size {
+	case ButtonSizeSM:
+		sizeClass = " p-1.5"
+	case ButtonSizeLG:
+		sizeClass = " p-3"
+	default:
+		sizeClass = " p-2"
+	}
+
+	// Variant classes
+	variantClass := ""
+	switch variant {
+	case ButtonPrimary:
+		variantClass = " bg-brand text-white hover:bg-brand-800 focus:ring-brand/30"
+	case ButtonSecondary:
+		variantClass = " bg-surface border border-sidebar-border text-brand-500 hover:bg-surface-muted hover:text-brand focus:ring-brand/20"
+	case ButtonDanger:
+		variantClass = " bg-error-50 text-error-600 hover:bg-error-100 focus:ring-error-500/30"
+	case ButtonGhost:
+		variantClass = " bg-transparent text-brand-400 hover:bg-surface-muted hover:text-brand focus:ring-brand/20"
+	default:
+		variantClass = " bg-surface-muted text-brand-500 hover:bg-surface-hover hover:text-brand focus:ring-brand/20"
+	}
+
+	return base + sizeClass + variantClass
+}

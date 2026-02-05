@@ -1,0 +1,75 @@
+package pages
+
+import (
+	"github.com/freitasmatheusrn/lifecycle-monitor/internal/views/layouts"
+	"github.com/freitasmatheusrn/lifecycle-monitor/internal/views/components"
+)
+
+templ Login() {
+	@layouts.Auth("Login") {
+		<div class="w-full">
+			<!-- Brand -->
+			<div class="text-center mb-8">
+				<div class="inline-flex items-center justify-center w-12 h-12 bg-brand rounded-xl mb-4">
+					<svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+					</svg>
+				</div>
+				<h1 class="text-2xl font-semibold text-brand">Bem-vindo de volta</h1>
+				<p class="text-brand-500 mt-1">Entre na sua conta para continuar</p>
+			</div>
+
+			<!-- Login Card -->
+			<div class="bg-surface rounded-xl shadow-card border border-sidebar-border p-8">
+				<form
+					hx-post="/signin"
+					hx-swap="none"
+					class="space-y-5"
+				>
+					@components.Input(components.InputProps{
+						Type:        "email",
+						Name:        "email",
+						Label:       "Email",
+						Placeholder: "seu@email.com",
+						Icon:        "email",
+						Required:    true,
+					})
+					@components.Input(components.InputProps{
+						Type:        "password",
+						Name:        "password",
+						Label:       "Senha",
+						Placeholder: "Digite sua senha",
+						Icon:        "password",
+						Required:    true,
+					})
+
+					<div class="flex items-center justify-between">
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input type="checkbox" name="remember" class="w-4 h-4 rounded border-sidebar-border text-brand focus:ring-brand/20"/>
+							<span class="text-sm text-brand-500">Lembrar de mim</span>
+						</label>
+						<a href="/forgot-password" class="text-sm text-brand hover:text-brand-700 font-medium">
+							Esqueceu a senha?
+						</a>
+					</div>
+
+					@components.Button(components.ButtonProps{
+						Type:    "submit",
+						Variant: components.ButtonPrimary,
+						Class:   "w-full",
+					}) {
+						Entrar
+					}
+				</form>
+			</div>
+
+			<!-- Sign up link -->
+			<p class="text-center mt-6 text-brand-500">
+				Não tem conta?
+				<a href="/signup" class="text-brand font-medium hover:text-brand-700 ml-1">
+					Criar conta
+				</a>
+			</p>
+		</div>
+	}
+}

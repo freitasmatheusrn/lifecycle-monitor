@@ -1,0 +1,97 @@
+package layouts
+
+import "github.com/freitasmatheusrn/lifecycle-monitor/internal/views/components"
+
+type BaseProps struct {
+	Title       string
+	CurrentPath string
+	UserName    string
+	UserEmail   string
+}
+
+// Base layout with sidebar for authenticated pages
+templ Base(title string) {
+	@BaseWithProps(BaseProps{Title: title})
+}
+
+templ BaseWithProps(props BaseProps) {
+	<!DOCTYPE html>
+	<html lang="pt-BR">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ props.Title } | Lifecycle Monitor</title>
+			<link rel="stylesheet" href="/assets/output.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+			<script src="/assets/javascript/toast.js" defer></script>
+		</head>
+		<body class="bg-surface-cream min-h-screen" hx-boost="true">
+			<!-- Toast notifications -->
+			<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+			<!-- Sidebar -->
+			@components.Sidebar(components.SidebarProps{
+				CurrentPath: props.CurrentPath,
+				UserName:    props.UserName,
+				UserEmail:   props.UserEmail,
+			})
+
+			<!-- Main content area -->
+			<main class="lg:ml-64 min-h-screen">
+				<!-- Mobile header -->
+				<header class="lg:hidden sticky top-0 z-20 bg-surface border-b border-sidebar-border px-4 py-3 flex items-center gap-3">
+					<button
+						onclick="toggleSidebar()"
+						class="p-2 rounded-lg hover:bg-surface-muted transition-colors"
+					>
+						<svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+						</svg>
+					</button>
+					<span class="font-semibold text-brand">Lifecycle</span>
+				</header>
+
+				<div class="p-4 sm:p-6 lg:p-8">
+					{ children... }
+				</div>
+			</main>
+
+			<!-- Modal container -->
+			<div id="modal-container"></div>
+
+			<!-- Sidebar toggle script -->
+			<script>
+				function toggleSidebar() {
+					const sidebar = document.getElementById('sidebar');
+					const overlay = document.getElementById('sidebar-overlay');
+					sidebar.classList.toggle('-translate-x-full');
+					overlay.classList.toggle('hidden');
+				}
+			</script>
+		</body>
+	</html>
+}
+
+// Auth layout without sidebar for login/signup pages
+templ Auth(title string) {
+	<!DOCTYPE html>
+	<html lang="pt-BR">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } | Lifecycle Monitor</title>
+			<link rel="stylesheet" href="/assets/output.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+			<script src="/assets/javascript/toast.js" defer></script>
+		</head>
+		<body class="bg-surface-cream min-h-screen flex items-center justify-center" hx-boost="true">
+			<!-- Toast notifications -->
+			<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+			<!-- Auth content -->
+			<main class="w-full max-w-md px-4">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}

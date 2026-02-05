@@ -1,0 +1,154 @@
+package components
+
+import "strconv"
+
+type InputProps struct {
+	Type        string
+	Name        string
+	Label       string
+	Placeholder string
+	Value       string
+	Required    bool
+	Class       string
+	Error       string
+	Icon        string
+	Hint        string
+}
+
+templ Input(props InputProps) {
+	<div class={ "space-y-1.5", props.Class }>
+		if props.Label != "" {
+			<label for={ props.Name } class="block text-sm font-medium text-brand">
+				{ props.Label }
+				if props.Required {
+					<span class="text-error-500 ml-0.5">*</span>
+				}
+			</label>
+		}
+		<div class="relative">
+			if props.Icon != "" {
+				<div class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400">
+					@InputIcon(props.Icon)
+				</div>
+			}
+			<input
+				type={ props.Type }
+				name={ props.Name }
+				id={ props.Name }
+				placeholder={ props.Placeholder }
+				value={ props.Value }
+				if props.Required {
+					required
+				}
+				class={ inputClasses(props.Error != "", props.Icon != "") }
+			/>
+		</div>
+		if props.Error != "" {
+			<p class="text-error-500 text-xs flex items-center gap-1">
+				<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+					<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+				</svg>
+				{ props.Error }
+			</p>
+		} else if props.Hint != "" {
+			<p class="text-brand-400 text-xs">{ props.Hint }</p>
+		}
+	</div>
+}
+
+func inputClasses(hasError bool, hasIcon bool) string {
+	base := "w-full bg-surface border rounded-lg px-3 py-2.5 text-sm text-brand placeholder:text-brand-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
+
+	if hasIcon {
+		base += " pl-10"
+	}
+
+	if hasError {
+		return base + " border-error-500 focus:ring-error-500/30 focus:border-error-500"
+	}
+	return base + " border-sidebar-border focus:ring-brand/20 focus:border-brand-300 hover:border-brand-300"
+}
+
+templ InputIcon(icon string) {
+	switch icon {
+		case "email":
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+			</svg>
+		case "password":
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+			</svg>
+		case "user":
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+			</svg>
+		case "search":
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+			</svg>
+		default:
+			<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+			</svg>
+	}
+}
+
+// Textarea component
+type TextareaProps struct {
+	Name        string
+	Label       string
+	Placeholder string
+	Value       string
+	Required    bool
+	Class       string
+	Error       string
+	Rows        int
+}
+
+templ Textarea(props TextareaProps) {
+	<div class={ "space-y-1.5", props.Class }>
+		if props.Label != "" {
+			<label for={ props.Name } class="block text-sm font-medium text-brand">
+				{ props.Label }
+				if props.Required {
+					<span class="text-error-500 ml-0.5">*</span>
+				}
+			</label>
+		}
+		<textarea
+			name={ props.Name }
+			id={ props.Name }
+			placeholder={ props.Placeholder }
+			rows={ textareaRows(props.Rows) }
+			if props.Required {
+				required
+			}
+			class={ textareaClasses(props.Error != "") }
+		>{ props.Value }</textarea>
+		if props.Error != "" {
+			<p class="text-error-500 text-xs flex items-center gap-1">
+				<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+					<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+				</svg>
+				{ props.Error }
+			</p>
+		}
+	</div>
+}
+
+func textareaRows(rows int) string {
+	if rows <= 0 {
+		return "4"
+	}
+	return strconv.Itoa(rows)
+}
+
+func textareaClasses(hasError bool) string {
+	base := "w-full bg-surface border rounded-lg px-3 py-2.5 text-sm text-brand placeholder:text-brand-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 resize-none"
+
+	if hasError {
+		return base + " border-error-500 focus:ring-error-500/30 focus:border-error-500"
+	}
+	return base + " border-sidebar-border focus:ring-brand/20 focus:border-brand-300 hover:border-brand-300"
+}
