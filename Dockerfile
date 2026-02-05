@@ -13,6 +13,9 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o lifecycle-monitor ./cmd/main.go
 
+# Install goose for migrations
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
 # Install playwright-go driver and chromium browser
 RUN go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
 
@@ -47,6 +50,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy binary and assets from builder
 COPY --from=builder /app/lifecycle-monitor .
 COPY --from=builder /app/assets ./assets
+
+# Copy goose binary and migrations
+COPY --from=builder /go/bin/goose /usr/local/bin/goose
+COPY --from=builder /app/internal/database/postgres/migrations ./internal/database/postgres/migrations
 
 # Copy playwright browsers and driver from builder
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
