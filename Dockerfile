@@ -1,27 +1,29 @@
+# -----------------------
 # Build stage
+# -----------------------
 FROM golang:1.24-bookworm AS builder
 
 WORKDIR /app
 
-# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build the application
+# Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o lifecycle-monitor ./cmd/main.go
 
-# Install playwright-go driver and chromium browser
-RUN go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
+# Install playwright-go driver + browsers
+RUN go run github.com/playwright-community/playwright-go/cmd/playwright@v1.52.0 install chromium
 
-# Runtime stage - use Debian with all browser dependencies pre-installed
+# -----------------------
+# Runtime stage
+# -----------------------
 FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Install runtime dependencies for Chromium
+# Chromium runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libnss3 \
@@ -44,15 +46,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy binary and assets from builder
+# App
 COPY --from=builder /app/lifecycle-monitor .
-COPY --from=builder /app/assets ./assets
 
-# Copy playwright browsers and driver from builder
+# Playwright driver (ESSENCIAL)
+COPY --from=builder /go/bin/playwright /usr/local/bin/playwright
+
+# Browsers
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
-# Expose port
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+
 EXPOSE 5000
 
-# Run the application
 CMD ["./lifecycle-monitor"]
