@@ -50,6 +50,7 @@ COPY --from=builder /app/assets ./assets
 
 # Copy playwright browsers and driver from builder
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
+COPY --from=builder /root/.cache/ms-playwright-go /root/.cache/ms-playwright-go
 
 # Expose port
 EXPOSE 5000
