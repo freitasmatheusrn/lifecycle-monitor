@@ -13,7 +13,7 @@ func New(name string, value string, expires time.Time, maxAge int) *http.Cookie 
 		Value:    value,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		Expires:  expires,
 		MaxAge:   maxAge,
@@ -39,7 +39,7 @@ func ClearAuthCookies(c echo.Context) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
@@ -50,7 +50,7 @@ func ClearAuthCookies(c echo.Context) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
@@ -64,7 +64,7 @@ func SetFlashToast(c echo.Context, level, message string) {
 		Value:    level + "|" + message,
 		Path:     "/",
 		HttpOnly: false, // Must be readable by JavaScript
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   60, // 1 minute expiry
 	})

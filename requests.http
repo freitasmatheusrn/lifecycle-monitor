@@ -1,5 +1,5 @@
 ### Variables
-@apiUrl = http://localhost:8080
+@apiUrl = http://178.156.155.152:5000
 
 @contentType = application/json
 
