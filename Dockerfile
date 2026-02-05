@@ -1,10 +1,7 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-bookworm AS builder
 
 WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache git
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -16,17 +13,43 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o lifecycle-monitor ./cmd/main.go
 
-# Runtime stage
-FROM mcr.microsoft.com/playwright:v1.52.0-jammy
+# Install playwright-go driver and chromium browser
+RUN go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
+
+# Runtime stage - use Debian with all browser dependencies pre-installed
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Copy binary from builder
+# Install runtime dependencies for Chromium
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binary and assets from builder
 COPY --from=builder /app/lifecycle-monitor .
 COPY --from=builder /app/assets ./assets
 
-# Install Playwright browsers
-RUN npx playwright install chromium
+# Copy playwright browsers and driver from builder
+COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 # Expose port
 EXPOSE 5000
