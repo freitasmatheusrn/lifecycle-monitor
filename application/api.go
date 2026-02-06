@@ -221,6 +221,7 @@ func (app *Application) Mount() http.Handler {
 	protected.POST("/products/import", productHandler.ImportSpreadsheet)
 	protected.POST("/products/import-stream", productHandler.ImportSpreadsheetSSE)
 	protected.GET("/products/add-stream", productHandler.AddProductsSSE)
+	protected.GET("/products/export", productHandler.ExportSpreadsheet)
 	protected.GET("/products/:id", productHandler.GetProduct)
 	protected.PUT("/products/:id", productHandler.UpdateProduct)
 	protected.DELETE("/products/:id", productHandler.DeleteProduct)

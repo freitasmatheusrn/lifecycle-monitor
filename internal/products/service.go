@@ -1,6 +1,7 @@
 package products
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -31,6 +32,7 @@ type Service interface {
 	AddProductsWithProgress(ctx context.Context, input AddProductsInput, onProgress ProgressCallback) (*AddProductsResult, *rest.ApiErr)
 	ImportFromSpreadsheet(ctx context.Context, file io.Reader, areaID pgtype.UUID) (*ImportResult, *rest.ApiErr)
 	ImportFromSpreadsheetWithProgress(ctx context.Context, file io.Reader, areaID pgtype.UUID, onProgress ImportProgressCallback) (*ImportResult, *rest.ApiErr)
+	ExportToSpreadsheet(ctx context.Context) (*bytes.Buffer, *rest.ApiErr)
 }
 
 type svc struct {
@@ -798,7 +800,7 @@ func (s *svc) ImportFromSpreadsheetWithProgress(ctx context.Context, file io.Rea
 		Products: make([]ProductOutput, 0),
 	}
 
-	// Count valid rows (rows with manufacturer code starting from row 3)
+	// Count valid rows (rows with manufacturer code starting from row 4)
 	validRows := make([]int, 0)
 	for rowIdx := 3; rowIdx < len(rows); rowIdx++ {
 		row := rows[rowIdx]
@@ -836,7 +838,7 @@ func (s *svc) ImportFromSpreadsheetWithProgress(ctx context.Context, file io.Rea
 			}
 			return ""
 		}
-
+		
 		areaName := getValue(1)
 		description := getValue(2)
 		manufacturerCode := getValue(3)
@@ -1170,6 +1172,161 @@ func (s *svc) ImportFromSpreadsheetWithProgress(ctx context.Context, file io.Rea
 	}
 
 	return result, nil
+}
+
+func (s *svc) ExportToSpreadsheet(ctx context.Context) (*bytes.Buffer, *rest.ApiErr) {
+	products, err := s.repo.ListProducts(ctx)
+	if err != nil {
+		s.logger.Error("failed to list products for export", zap.Error(err))
+		return nil, rest.NewInternalServerError("erro ao buscar produtos para exportacao")
+	}
+
+	f := excelize.NewFile()
+	sheetName := "Sheet1"
+
+	// Header style: green background, white bold text, thin borders
+	headerStyleID, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Bold:  true,
+			Color: "#FFFFFF",
+			Size:  11,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#548235"},
+			Pattern: 1,
+		},
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+		},
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+			Vertical:   "center",
+		},
+	})
+
+	// Data style: thin borders
+	dataStyleID, _ := f.NewStyle(&excelize.Style{
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+		},
+		Alignment: &excelize.Alignment{
+			Vertical: "center",
+		},
+	})
+
+	// Header row matching the import layout (columns B-J)
+	type header struct {
+		col   string
+		value string
+	}
+	headers := []header{
+		{"B", "Área"},
+		{"C", "Descrição"},
+		{"D", "Código Fabricante"},
+		{"E", "Qtd"},
+		{"F", "Código SAP"},
+		{"G", "Obs."},
+		{"H", "MIN"},
+		{"I", "MAX"},
+		{"J", "STATUS"},
+	}
+
+	// Track max column widths for auto-sizing
+	colMaxWidth := make(map[string]float64)
+	for _, h := range headers {
+		f.SetCellValue(sheetName, h.col+"2", h.value)
+		colMaxWidth[h.col] = float64(len([]rune(h.value)))
+	}
+	f.SetCellStyle(sheetName, "B2", "J2", headerStyleID)
+
+	// Data starts at row 3 (matching import's rowIdx=2)
+	for i, p := range products {
+		row := strconv.Itoa(i + 3)
+
+		trackWidth := func(col, value string) {
+			f.SetCellValue(sheetName, col+row, value)
+			if w := float64(len([]rune(value))); w > colMaxWidth[col] {
+				colMaxWidth[col] = w
+			}
+		}
+
+		trackWidth("B", p.AreaName.String)
+		trackWidth("C", p.Description.String)
+		trackWidth("D", p.Code)
+		trackWidth("F", p.SapCode.String)
+		trackWidth("G", computeExportObservations(p))
+		trackWidth("J", p.InventoryStatus.String)
+
+		if p.Quantity.Valid {
+			v := int(p.Quantity.Int32)
+			f.SetCellValue(sheetName, "E"+row, v)
+			if w := float64(len(strconv.Itoa(v))); w > colMaxWidth["E"] {
+				colMaxWidth["E"] = w
+			}
+		}
+
+		if p.MinQuantity.Valid {
+			v := int(p.MinQuantity.Int32)
+			f.SetCellValue(sheetName, "H"+row, v)
+			if w := float64(len(strconv.Itoa(v))); w > colMaxWidth["H"] {
+				colMaxWidth["H"] = w
+			}
+		}
+
+		if p.MaxQuantity.Valid {
+			v := int(p.MaxQuantity.Int32)
+			f.SetCellValue(sheetName, "I"+row, v)
+			if w := float64(len(strconv.Itoa(v))); w > colMaxWidth["I"] {
+				colMaxWidth["I"] = w
+			}
+		}
+
+		f.SetCellStyle(sheetName, "B"+row, "J"+row, dataStyleID)
+	}
+
+	// Auto-fit column widths with padding
+	for col, maxW := range colMaxWidth {
+		width := maxW*1.2 + 4
+		if width < 8 {
+			width = 8
+		}
+		f.SetColWidth(sheetName, col, col, width)
+	}
+
+	// Add autofilter on header row
+	lastRow := len(products) + 2
+	f.AutoFilter(sheetName, fmt.Sprintf("B2:J%d", lastRow), nil)
+
+	buf := new(bytes.Buffer)
+	if err := f.Write(buf); err != nil {
+		s.logger.Error("failed to write spreadsheet to buffer", zap.Error(err))
+		return nil, rest.NewInternalServerError("erro ao gerar planilha")
+	}
+	f.Close()
+
+	return buf, nil
+}
+
+func computeExportObservations(p repo.ListProductsRow) string {
+	if !p.LifecycleStatus.Valid {
+		return ""
+	}
+
+	switch p.LifecycleStatus.String {
+	case "Prod. Cancellation", "End Prod.Lifecycl.", "Prod. Discont.":
+		return fmt.Sprintf("Produto obsoleto, substituir por %s", p.ReplacementUrl.String)
+	case "Phase Out Announce":
+		return "Phase out anunciado"
+	default:
+		return ""
+	}
 }
 
 func (s *svc) handleDBError(err error) *rest.ApiErr {

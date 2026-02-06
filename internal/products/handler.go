@@ -402,3 +402,20 @@ func (h *Handler) ImportSpreadsheetSSE(c echo.Context) error {
 		}
 	}
 }
+
+// ExportSpreadsheet handles GET /products/export
+// Exports all products to an Excel spreadsheet for download
+func (h *Handler) ExportSpreadsheet(c echo.Context) error {
+	_, err := user.GetCurrentUser(c)
+	if err != nil {
+		return rest.NewUnauthorizedRequestError("usuario nao autenticado")
+	}
+
+	buf, apiErr := h.service.ExportToSpreadsheet(c.Request().Context())
+	if apiErr != nil {
+		return apiErr
+	}
+
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=produtos.xlsx")
+	return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
+}

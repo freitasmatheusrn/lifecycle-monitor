@@ -7,17 +7,17 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Install goose for migrations (before COPY . . so it's cached)
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+
+# Install playwright-go driver and chromium browser (before COPY . . so it's cached)
+RUN go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
+
 # Copy source code
 COPY . .
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o lifecycle-monitor ./cmd/main.go
-
-# Install goose for migrations
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
-
-# Install playwright-go driver and chromium browser
-RUN go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium
 
 # Runtime stage - use Debian with all browser dependencies pre-installed
 FROM debian:bookworm-slim
